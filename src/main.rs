@@ -156,7 +156,7 @@ fn dot(u: Vec3, v: Vec3) -> f64 {
 
 impl Vec3 {
     fn new(x: f64, y: f64, z: f64) -> Vec3 {
-        Vec3 { x: x, y: y, z: z }
+        Vec3 { x, y, z }
     }
 
     fn near_zero(&self) -> bool {
@@ -229,6 +229,7 @@ type Color = Vec3;
 // Ray stuff
 
 #[derive(Copy, Clone)]
+#[derive(Default)]
 struct Ray {
     origin: Point3,
     direction: Vec3,
@@ -240,20 +241,13 @@ impl Ray {
     }
     fn new(origin: Point3, direction: Vec3) -> Ray {
         Ray {
-            origin: origin,
-            direction: direction,
+            origin,
+            direction,
         }
     }
 }
 
-impl Default for Ray {
-    fn default() -> Ray {
-        Ray {
-            origin: Vec3::default(),
-            direction: Vec3::default(),
-        }
-    }
-}
+
 
 // Hit record
 #[derive(Clone)]
@@ -303,8 +297,8 @@ struct Sphere {
 impl Sphere {
     fn new(center: Point3, radius: f64, material: Rc<dyn Material>) -> Sphere {
         Sphere {
-            center: center,
-            radius: radius,
+            center,
+            radius,
             mat_ptr: material,
         }
     }
@@ -339,7 +333,7 @@ impl Hittable for Sphere {
         rec.set_face_normal(r, outward_normal);
         rec.mat_ptr = self.mat_ptr.clone();
 
-        return true;
+        true
     }
 }
 
@@ -356,11 +350,10 @@ impl HittableList {
         }
     }
 
-    fn clear(&mut self) {
-        self.objects.clear();
-    }
-    // Keep an eye on whether adding an object to the front is acceptable instead of adding it to
-    // the back of the Vec
+    //fn clear(&mut self) {
+    //    self.objects.clear();
+    //}
+
     fn add(&mut self, object: Rc<dyn Hittable>) {
         self.objects.push(object);
     }
@@ -380,7 +373,7 @@ impl Hittable for HittableList {
             }
         }
 
-        return hit_anything;
+        hit_anything
     }
 }
 
@@ -414,7 +407,7 @@ struct Lambertian {
 
 impl Lambertian {
     fn new(albedo: Color) -> Lambertian {
-        Lambertian { albedo: albedo }
+        Lambertian { albedo }
     }
 }
 
@@ -435,7 +428,7 @@ impl Material for Lambertian {
 
         *scattered = Ray::new(rec.p, scatter_direction);
         *attenuation = self.albedo;
-        return true;
+        true
     }
 }
 
@@ -448,8 +441,8 @@ struct Metal {
 impl Metal {
     fn new(albedo: Color, fuzz: f64) -> Metal {
         Metal {
-            albedo: albedo,
-            fuzz: fuzz,
+            albedo,
+            fuzz,
         }
     }
 }
@@ -466,7 +459,7 @@ impl Material for Metal {
 
         *scattered = Ray::new(rec.p, reflected + Vec3::random_in_unit_sphere() * self.fuzz);
         *attenuation = self.albedo;
-        return dot(scattered.direction, rec.normal) > 0.0;
+        dot(scattered.direction, rec.normal) > 0.0
     }
 }
 
@@ -476,7 +469,7 @@ struct Dielectric {
 
 impl Dielectric {
     fn new(ir: f64) -> Dielectric {
-        Dielectric { ir: ir }
+        Dielectric { ir }
     }
     fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
         let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
@@ -493,24 +486,21 @@ impl Material for Dielectric {
         attenuation: &mut Color,
         scattered: &mut Ray,
     ) -> bool {
-        let refraction_ratio;
-        if rec.front_face {
-            refraction_ratio = 1.0 / self.ir;
+        let refraction_ratio = if rec.front_face {
+            1.0 / self.ir
         } else {
-            refraction_ratio = self.ir;
-        }
+            self.ir
+        };
         let unit_direction = Vec3::unit_vector(r_in.direction);
         let cos_theta = dot(-unit_direction, rec.normal).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
         let cannot_refract: bool = refraction_ratio * sin_theta > 1.0;
-        let direction;
-
-        if cannot_refract || Dielectric::reflectance(cos_theta, refraction_ratio) > random_float() {
-            direction = reflect(unit_direction, rec.normal);
+        let direction = if cannot_refract || Dielectric::reflectance(cos_theta, refraction_ratio) > random_float() {
+            reflect(unit_direction, rec.normal)
         } else {
-            direction = refract(unit_direction, rec.normal, refraction_ratio);
-        }
+            refract(unit_direction, rec.normal, refraction_ratio)
+        };
 
         *scattered = Ray::new(rec.p, direction);
         *attenuation = Color::new(1.0, 1.0, 1.0);
@@ -526,9 +516,9 @@ fn clamp(x: f64, min: f64, max: f64) -> f64 {
         return min;
     }
     if x > max {
-        return max;
+        max
     } else {
-        return x;
+        x
     }
 }
 
@@ -593,7 +583,7 @@ fn ray_color(r: Ray, world: &dyn Hittable, depth: i64) -> Color {
     }
     let unit_direction = Vec3::unit_vector(r.direction);
     let t = (unit_direction.y + 1.0) * 0.5;
-    return (Vec3::new(1.0, 1.0, 1.0) * (1.0 - t)) + (Vec3::new(0.5, 0.7, 1.0) * t);
+    (Vec3::new(1.0, 1.0, 1.0) * (1.0 - t)) + (Vec3::new(0.5, 0.7, 1.0) * t)
 }
 
 #[derive(Copy, Clone)]
@@ -633,13 +623,13 @@ impl Camera {
 
         let lens_radius = aperture / 2.0;
         Camera {
-            origin: origin,
-            horizontal: horizontal,
-            vertical: vertical,
-            lower_left_corner: lower_left_corner,
-            lens_radius: lens_radius,
-            u: u,
-            v: v,
+            origin,
+            horizontal,
+            vertical,
+            lower_left_corner,
+            lens_radius,
+            u,
+            v,
         }
     }
 
