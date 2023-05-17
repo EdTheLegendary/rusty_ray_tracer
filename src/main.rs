@@ -781,6 +781,6 @@ fn main() {
         }
     }
     let mut file =
-        File::create("/media/edthelegendary/MorganAlpha/RustWork/ProgramOutput/image.ppm").unwrap();
+        File::create("/home/edthelegendary/Pictures/Wallpapers/2kRayTracerWallpaper.ppm").unwrap();
     file.write_all(file_string.as_bytes()).unwrap();
 }
